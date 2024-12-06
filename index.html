@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Place & Job Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+        h1 {
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        .output {
+            margin-top: 20px;
+        }
+        .output p {
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Place & Job Game</h1>
+    <div class="container">
+        <div id="setup">
+            <div class="form-group">
+                <label for="players">Number of Players:</label>
+                <input type="number" id="players" min="1" required>
+            </div>
+            <div class="form-group">
+                <label for="mysteryRoles">Number of Mystery Roles:</label>
+                <input type="number" id="mysteryRoles" min="0" required>
+            </div>
+            <button id="startGame">Start Game</button>
+        </div>
+        <div id="playerView" class="hidden">
+            <p id="playerInfo"></p>
+            <button id="nextPlayer">Next Player</button>
+        </div>
+    </div>
+    <script>
+        // Data for places and jobs
+        const places = [
+            "Beach", "Mountain", "Forest", "Desert", "City Park", "Farm", "Factory", "School", "Hospital", "Library",
+            "Office", "Museum", "Airport", "Bus Station", "Train Station", "Restaurant", "Cafe", "Bar", "Theater", "Cinema",
+            "Mall", "Supermarket", "Hotel", "Zoo", "Aquarium", "Gym", "Stadium", "Concert Hall", "Art Gallery", "Night Club",
+            "Campground", "Garden", "Lake", "River", "Waterfall", "Island", "Harbor", "Bridge", "Tunnel", "Roadside",
+            "Highway", "Village", "Town", "City Center", "Suburb", "Slum", "Market", "Garage", "Bakery", "Bookstore",
+            "Butcher", "Pharmacy", "Hardware Store", "Toy Store", "Clothing Store", "Jewelry Store", "Salon", "Barbershop",
+            "Pet Shop", "Veterinary", "University", "College", "High School", "Middle School", "Elementary School", "Playground",
+            "Daycare", "Elderly Home", "Fire Station", "Police Station", "Embassy", "Consulate", "Government Building", "Courthouse", "Prison"
+        ];
+
+        const jobs = {
+            "Beach": ["Lifeguard", "Ice Cream Vendor", "Surfer", "Fisherman", "Sandcastle Builder", "Sunbather", "Swim Instructor", "Beach Cleaner", "Shell Collector", "Kite Flyer", "Beach Photographer", "Snack Bar Attendant"],
+            "Mountain": ["Hiker", "Mountain Biker", "Rock Climber", "Wildlife Photographer", "Forest Ranger", "Geologist", "Botanist", "Mountain Guide", "Ski Instructor", "Snowboarder", "Campfire Storyteller", "Rescuer"],
+            "Forest": ["Park Ranger", "Forest Guide", "Wildlife Researcher", "Herbalist", "Birdwatcher", "Camp Counselor", "Mushroom Forager", "Tree Planter", "Trail Maintainer", "Fire Lookout", "Nature Photographer", "Biker"],
+            "Desert": ["Camel Rider", "Sandboarder", "Cactus Collector", "Desert Guide", "Miner", "Archeologist", "Sand Artist", "Oasis Caretaker", "Star Gazer", "Treasure Hunter", "Safari Guide", "Ranger"],
+            "City Park": ["Jogger", "Dog Walker", "Picnic Organizer", "Park Cleaner", "Gardener", "Flower Planter", "Bird Feeder", "Yoga Instructor", "Tai Chi Practitioner", "Swing Pusher", "Park Ranger", "Chess Player"],
+            "Farm": ["Farmer", "Rancher", "Crop Duster", "Farm Hand", "Vet", "Shepherd", "Horse Trainer", "Field Worker", "Irrigation Specialist", "Crop Scout", "Seed Planter", "Tractor Operator"],
+            "Factory": ["Factory Worker", "Line Inspector", "Machine Operator", "Quality Controller", "Maintenance Worker", "Shift Supervisor", "Packer", "Assembler", "Material Handler", "Welder", "Forklift Operator", "Logistics Coordinator"],
+            "School": ["Teacher", "Principal", "Librarian", "Janitor", "Counselor", "Secretary", "Substitute Teacher", "Coach", "School Nurse", "Security Officer", "Lunch Lady", "Student"],
+            "Hospital": ["Doctor", "Nurse", "Surgeon", "Lab Technician", "Radiologist", "Pharmacist", "Receptionist", "Paramedic", "Janitor", "Physical Therapist", "Dietitian", "Social Worker"],
+            "Library": ["Librarian", "Archivist", "Library Assistant", "Researcher", "Cataloger", "Bookbinder", "IT Specialist", "Children's Librarian", "Circulation Clerk", "Reference Librarian", "Security", "Maintenance Worker"],
+            "Office": ["Manager", "Assistant", "HR Specialist", "IT Support", "Accountant", "Marketer", "Sales Rep", "Receptionist", "Cleaner", "Customer Service", "Project Manager", "Analyst"],
+            "Museum": ["Curator", "Museum Guide", "Archivist", "Conservator", "Exhibit Designer", "Museum Educator", "Registrar", "Security Guard", "Receptionist", "Maintenance Worker", "Photographer", "Researcher"],
+            "Airport": ["Pilot", "Flight Attendant", "Air Traffic Controller", "Security Officer", "Ground Staff", "Baggage Handler", "Check-in Agent", "Customs Officer", "Airport Manager", "Janitor", "Retail Staff", "Customer Service"],
+            "Bus Station": ["Bus Driver", "Ticket Agent", "Security", "Maintenance Worker", "Manager", "Customer Service", "Cleaner", "Bus Mechanic", "Information Desk", "Dispatcher", "Luggage Handler", "Cafeteria Worker"],
+            "Train Station": ["Train Conductor", "Ticket Collector", "Security", "Station Master", "Janitor", "Customer Service", "Luggage Porter", "Maintenance Worker", "Retail Worker", "Information Clerk", "Platform Attendant", "Technician"],
+            "Restaurant": ["Chef", "Waiter", "Bartender", "Dishwasher", "Manager", "Host", "Sous Chef", "Pastry Chef", "Line Cook", "Busser", "Sommelier", "Barista"],
+            "Cafe": ["Barista", "Waiter", "Chef", "Dishwasher", "Manager", "Baker", "Cashier", "Cleaner", "Host", "Customer Service", "Supply Coordinator", "Marketing Specialist"],
+            "Bar": ["Bartender", "Waiter", "Bouncer", "Manager", "Cleaner", "DJ", "Cashier", "Mixologist", "Kitchen Staff", "Security", "Host", "Barback"],
+            "Theater": ["Actor", "Director", "Stage Manager", "Lighting Technician", "Sound Technician", "Costume Designer", "Makeup Artist", "Prop Master", "Usher", "Box Office Staff", "Maintenance Worker", "Marketing Manager"],
+            "Cinema": ["Projectionist", "Ticket Seller", "Concession Stand Worker", "Usher", "Cleaner", "Security", "Manager", "Marketing", "Technical Support", "Customer Service", "Maintenance", "Promoter"],
+            "Mall": ["Store Manager", "Sales Associate", "Security", "Cleaner", "Customer Service", "Marketing", "Maintenance Worker", "Window Dresser", "Stock Clerk", "Barista", "Chef", "Cashier"],
+            "Supermarket": ["Cashier", "Stock Clerk", "Bagger", "Manager", "Security", "Customer Service", "Butcher", "Baker", "Produce Clerk", "Cleaner", "Deli Clerk", "Pharmacist"],
+            "Hotel": ["Receptionist", "Bellhop", "Housekeeper", "Chef", "Waiter", "Bartender", "Manager", "Concierge", "Valet", "Security", "Event Planner", "Maintenance Worker"],
+            "Zoo": ["Zookeeper", "Veterinarian", "Animal Trainer", "Tour Guide", "Educator", "Security", "Ticket Seller", "Janitor", "Concession Worker", "Gift Shop Clerk", "Maintenance Worker", "Marketing"],
+            "Aquarium": ["Aquarist", "Marine Biologist", "Tour Guide", "Educator", "Security", "Ticket Seller", "Janitor", "Concession Worker", "Gift Shop Clerk", "Maintenance Worker", "Marketing", "Researcher"],
+            "Gym": ["Personal Trainer", "Yoga Instructor", "Receptionist", "Cleaner", "Manager", "Fitness Instructor", "Swim Instructor", "Nutritionist", "Gym Technician", "Security", "Class Coordinator", "Sales"],
+            "Stadium": ["Usher", "Security", "Cleaner", "Concession Worker", "Ticket Seller", "Groundskeeper", "Event Coordinator", "Manager", "Coach", "Player", "Mascot", "Technician"],
+            "Concert Hall": ["Usher", "Ticket Seller", "Security", "Cleaner", "Concession Worker", "Manager", "Sound Technician", "Lighting Technician", "Stagehand", "Event Coordinator", "Box Office Staff", "Marketing"],
+            "Art Gallery": ["Curator", "Art Handler", "Security", "Receptionist", "Tour Guide", "Maintenance Worker", "Event Coordinator", "Marketing", "Art Restorer", "Docent", "Education Coordinator", "Gift Shop Clerk"],
+            "Night Club": ["Bartender", "Waiter", "Bouncer", "DJ", "Manager", "Cleaner", "Cashier", "Security", "Promoter", "Host", "Dancer", "Sound Technician"],
+            "Campground": ["Camp Counselor", "Park Ranger", "Hiker", "Camper", "Fisherman", "Mountain Biker", "Campfire Storyteller", "Birdwatcher", "Nature Photographer", "Tree Planter", "Trail Maintainer", "Rescuer"],
+            "Garden": ["Gardener", "Botanist", "Florist", "Groundskeeper", "Park Ranger", "Landscape Architect", "Horticulturist", "Tree Surgeon", "Herbalist", "Beekeeper", "Garden Designer", "Composter"],
+            "Lake": ["Swimmer", "Fisherman", "Boater", "Kayaker", "Paddleboarder", "Lifeguard", "Birdwatcher", "Sunbather", "Picnicker", "Photographer", "Camper", "Rescuer"],
+            "River": ["Fisherman", "Kayaker", "Rafter", "Swimmer", "Birdwatcher", "Photographer", "Camper", "Boater", "Park Ranger", "Nature Guide", "River Cleaner", "Environmentalist"],
+            "Waterfall": ["Hiker", "Photographer", "Nature Guide", "Camper", "Swimmer", "Birdwatcher", "Park Ranger", "Geologist", "Botanist", "Picnicker", "Trail Maintainer", "Rescuer"],
+            "Island": ["Tourist", "Fisherman", "Lifeguard", "Surfer", "Diver", "Sailor", "Boater", "Tour Guide", "Hotel Staff", "Restaurant Staff", "Shopkeeper", "Rescuer"],
+            "Harbor": ["Dock Worker", "Fisherman", "Sailor", "Boat Captain", "Tour Guide", "Customs Officer", "Cargo Loader", "Security", "Manager", "Cleaner", "Mechanic", "Retail Worker"],
+            "Bridge": ["Engineer", "Maintenance Worker", "Tour Guide", "Photographer", "Architect", "Painter", "Security", "Construction Worker", "Inspector", "Surveyor", "Cleaner", "Decorator"],
+            "Tunnel": ["Engineer", "Maintenance Worker", "Security", "Construction Worker", "Inspector", "Surveyor", "Cleaner", "Technician", "Safety Officer", "Guide", "Operator", "Worker"],
+            "Roadside": ["Mechanic", "Gas Station Attendant", "Food Truck Vendor", "Highway Patrol", "Toll Booth Operator", "Road Worker", "Rest Stop Attendant", "Tow Truck Driver", "Litter Picker", "Billboard Installer", "Surveyor", "Cleaner"],
+            "Highway": ["Truck Driver", "Road Worker", "Traffic Engineer", "Highway Patrol", "Toll Booth Operator", "Service Station Worker", "Rest Stop Attendant", "Surveyor", "Litter Picker", "Mechanic", "Construction Worker", "Cleaner"],
+            "Village": ["Farmer", "Shopkeeper", "Teacher", "Doctor", "Mayor", "Police Officer", "Postman", "Baker", "Blacksmith", "Builder", "Gardener", "Innkeeper"],
+            "Town": ["Mayor", "Police Officer", "Firefighter", "Teacher", "Doctor", "Shopkeeper", "Pharmacist", "Librarian", "Banker", "Builder", "Baker", "Taxi Driver"],
+            "City Center": ["Office Worker", "Shopkeeper", "Street Performer", "Police Officer", "Construction Worker", "Taxi Driver", "Restaurant Worker", "Banker", "Doctor", "Lawyer", "Journalist", "Tourist"],
+            "Suburb": ["Homeowner", "Gardener", "Postal Worker", "Teacher", "Police Officer", "Firefighter", "Nurse", "Shopkeeper", "Plumber", "Electrician", "Handyman", "Real Estate Agent"],
+            "Slum": ["Street Vendor", "Recycler", "Shopkeeper", "Tailor", "Teacher", "Social Worker", "Health Worker", "Community Leader", "Construction Worker", "Electrician", "Mechanic", "Caretaker"],
+            "Market": ["Vendor", "Shopper", "Butcher", "Baker", "Fishmonger", "Florist", "Clothier", "Jeweler", "Fruit Seller", "Vegetable Seller", "Spice Seller", "Craftsman"],
+            "Garage": ["Mechanic", "Car Washer", "Service Manager", "Receptionist", "Apprentice", "Parts Specialist", "Cleaner", "Welder", "Painter", "Detailer", "Technician", "Engineer"],
+            "Bakery": ["Baker", "Pastry Chef", "Cashier", "Cleaner", "Manager", "Delivery Driver", "Barista", "Cake Decorator", "Assistant Baker", "Customer Service", "Stock Clerk", "Dishwasher"],
+            "Bookstore": ["Bookseller", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Event Coordinator", "Marketing Specialist", "IT Support", "Delivery Worker", "Security", "Maintenance Worker"],
+            "Butcher": ["Butcher", "Assistant Butcher", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Delivery Driver", "Meat Packer", "Marketing Specialist", "Security", "Maintenance Worker"],
+            "Pharmacy": ["Pharmacist", "Pharmacy Technician", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Delivery Driver", "Marketing Specialist", "Security", "IT Support", "Maintenance Worker"],
+            "Hardware Store": ["Sales Associate", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Delivery Driver", "Marketing Specialist", "Security", "IT Support", "Maintenance Worker", "Display Designer"],
+            "Toy Store": ["Sales Associate", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Delivery Driver", "Marketing Specialist", "Security", "IT Support", "Display Designer", "Event Coordinator"],
+            "Clothing Store": ["Sales Associate", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Delivery Driver", "Marketing Specialist", "Security", "IT Support", "Display Designer", "Stylist"],
+            "Jewelry Store": ["Jeweler", "Sales Associate", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Security", "IT Support", "Marketing Specialist", "Appraiser", "Display Designer"],
+            "Salon": ["Hair Stylist", "Nail Technician", "Receptionist", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Marketing Specialist", "Security", "IT Support", "Beautician", "Makeup Artist"],
+            "Barbershop": ["Barber", "Receptionist", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Marketing Specialist", "Security", "IT Support", "Hair Stylist", "Shoeshiner", "Apprentice"],
+            "Pet Shop": ["Sales Associate", "Cashier", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Pet Groomer", "Veterinarian", "Animal Trainer", "Marketing Specialist", "Security", "IT Support"],
+            "Veterinary": ["Veterinarian", "Vet Technician", "Receptionist", "Manager", "Cleaner", "Customer Service", "Stock Clerk", "Marketing Specialist", "Security", "IT Support", "Animal Groomer", "Assistant"],
+            "University": ["Professor", "Student", "Administrator", "Custodian", "Security", "Librarian", "Researcher", "IT Support", "Maintenance Worker", "Admissions Officer", "Financial Aid Advisor", "Counselor"],
+            "College": ["Professor", "Student", "Administrator", "Custodian", "Security", "Librarian", "Researcher", "IT Support", "Maintenance Worker", "Admissions Officer", "Financial Aid Advisor", "Counselor"],
+            "High School": ["Teacher", "Student", "Principal", "Janitor", "Security", "Librarian", "Coach", "Counselor", "IT Support", "Maintenance Worker", "Cafeteria Worker", "Nurse"],
+            "Middle School": ["Teacher", "Student", "Principal", "Janitor", "Security", "Librarian", "Coach", "Counselor", "IT Support", "Maintenance Worker", "Cafeteria Worker", "Nurse"],
+            "Elementary School": ["Teacher", "Student", "Principal", "Janitor", "Security", "Librarian", "Coach", "Counselor", "IT Support", "Maintenance Worker", "Cafeteria Worker", "Nurse"],
+            "Embassy": ["Ambassador", "Consul", "Visa Officer", "Receptionist", "Security", "Translator", "Administrative Assistant", "Political Analyst", "Economic Advisor", "Cultural Attaché", "Press Secretary", "Maintenance Worker"],
+            "Consulate": ["Consul", "Visa Officer", "Receptionist", "Security", "Translator", "Administrative Assistant", "Political Analyst", "Economic Advisor", "Cultural Attaché", "Press Secretary", "Maintenance Worker", "Driver"],
+            "Government Building": ["Politician", "Clerk", "Security", "Janitor", "Administrator", "Receptionist", "Policy Analyst", "Legal Advisor", "IT Support", "Maintenance Worker", "Communications Officer", "Archivist"],
+            "Courthouse": ["Judge", "Lawyer", "Bailiff", "Clerk", "Court Reporter", "Security", "Janitor", "Administrator", "Receptionist", "Jury Coordinator", "Legal Assistant", "Maintenance Worker"],
+            "Prison": ["Warden", "Prison Guard", "Inmate", "Cook", "Janitor", "Maintenance Worker", "Medical Staff", "Counselor", "Teacher", "Clerk", "Security", "Rehabilitation Officer"],
+            "Playground": ["Parent", "Child", "Nanny", "Teacher", "Caretaker", "Security", "Maintenance Worker", "Coach", "Playground Designer", "Cleaner", "Ice Cream Vendor", "Street Performer"],
+            "Daycare": ["Daycare Worker", "Teacher", "Nanny", "Cook", "Janitor", "Administrator", "Receptionist", "Security", "Maintenance Worker", "Child Psychologist", "Cleaner", "Parent"],
+            "Elderly Home": ["Nurse", "Caregiver", "Cook", "Cleaner", "Administrator", "Receptionist", "Maintenance Worker", "Physical Therapist", "Social Worker", "Security", "Counselor", "Volunteer"],
+            "Fire Station": ["Firefighter", "Chief", "Paramedic", "Dispatcher", "Mechanic", "Instructor", "Cleaner", "Administrator", "IT Support", "Security", "Maintenance Worker", "Public Relations Officer"],
+            "Police Station": ["Police Officer", "Detective", "Dispatcher", "Chief", "Forensic Scientist", "Clerk", "Security", "Janitor", "IT Support", "Maintenance Worker", "Administrator", "Training Officer"]
+        };
+
+        let gameData = [];
+        let currentPlayerIndex = 0;
+
+        document.getElementById("startGame").addEventListener("click", () => {
+            const numPlayers = parseInt(document.getElementById("players").value);
+            const numMystery = parseInt(document.getElementById("mysteryRoles").value);
+
+            if (isNaN(numPlayers) || isNaN(numMystery) || numPlayers < 1 || numMystery < 0) {
+                alert("Please enter valid numbers for players and mystery roles.");
+                return;
+            }
+            if (numMystery > numPlayers) {
+                alert("Mystery roles cannot exceed the number of players.");
+                return;
+            }
+
+            // Select a random place
+            const selectedPlace = places[Math.floor(Math.random() * places.length)];
+            const selectedJobs = [...jobs[selectedPlace]];
+            gameData = [];
+
+            // Assign jobs and determine mystery roles
+            for (let i = 0; i < numPlayers; i++) {
+                const job = selectedJobs.splice(
+                    Math.floor(Math.random() * selectedJobs.length),
+                    1
+                )[0];
+                gameData.push({ player: `Player ${i + 1}`, place: selectedPlace, job });
+            }
+
+            // Randomly assign "?????" for mystery roles
+            const mysteryIndexes = Array.from({ length: numPlayers }, (_, i) => i).sort(
+                () => Math.random() - 0.5
+            ).slice(0, numMystery);
+
+            mysteryIndexes.forEach(index => {
+                gameData[index].place = "?????";
+                gameData[index].job = "?????";
+            });
+
+            // Switch to the player view
+            document.getElementById("setup").classList.add("hidden");
+            document.getElementById("playerView").classList.remove("hidden");
+
+            // Show the first player
+            currentPlayerIndex = 0;
+            showPlayer();
+        });
+
+        document.getElementById("nextPlayer").addEventListener("click", () => {
+            currentPlayerIndex++;
+            if (currentPlayerIndex >= gameData.length) {
+                alert("Game Over! All players have viewed their roles.");
+                document.getElementById("playerView").classList.add("hidden");
+                document.getElementById("setup").classList.remove("hidden");
+            } else {
+                showPlayer();
+            }
+        });
+
+        function showPlayer() {
+            const playerData = gameData[currentPlayerIndex];
+            document.getElementById("playerInfo").innerText = `${playerData.player}: Place - ${playerData.place}, Job - ${playerData.job}`;
+        }
+    </script>
+</body>
+</html>
